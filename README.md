@@ -1,4 +1,4 @@
-A simple, free API!
+A simple, free Coding!
 # DeepSeek Free API Hack
 
 **Use DeepSeek for free without API keys.**  
