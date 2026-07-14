@@ -1,6 +1,10 @@
 A simple, free Coding!
 
 # DeepSeek Free API Hack
+[![GitHub license](https://img.shields.io/github/license/rnalimov/deepseek-free-api-hack)](https://github.com/rnalimov/deepseek-free-api-hack/blob/main/LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/rnalimov/deepseek-free-api-hack)](https://github.com/rnalimov/deepseek-free-api-hack/stargazers)
+[![GitHub issues](https://img.shields.io/github/issues/rnalimov/deepseek-free-api-hack)](https://github.com/rnalimov/deepseek-free-api-hack/issues)
+[![GitHub last commit](https://img.shields.io/github/last-commit/rnalimov/deepseek-free-api-hack)](https://github.com/rnalimov/deepseek-free-api-hack/commits/main)
 
 **Use DeepSeek for free without API keys.**  
 A bridge between DeepSeek web interface and local CLI/GUI, **designed specifically for coding, software development, and programming tasks**.  
