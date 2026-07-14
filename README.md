@@ -32,7 +32,7 @@ If you encounter problems, feel free to open an issue or submit a Pull Request â
 
 ## ðŸ“¦ Installation
 ```bash
-git clone https://github.com/yourname/deepseek-free-api-hack
+git clone https://github.com/rnalimov/deepseek-free-api-hack
 cd deepseek-free-api-hack
 pip install -r requirements.txt
 ```
