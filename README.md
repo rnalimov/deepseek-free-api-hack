@@ -1,4 +1,5 @@
 A simple, free Coding!
+
 # DeepSeek Free API Hack
 
 **Use DeepSeek for free without API keys.**  
@@ -90,3 +91,5 @@ Command	Description
 /doctor	Diagnosis
 /help	Show all commands
 /exit	Exit
+
+Better than MCP!
