@@ -1,12 +1,12 @@
 A simple, free Coding!
 
-# DeepSeek Free API Hack
+# DeepSeek FreeCode
 [![GitHub license](https://img.shields.io/github/license/rnalimov/deepseek-free-api-hack)](https://github.com/rnalimov/deepseek-free-api-hack/blob/main/LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/rnalimov/deepseek-free-api-hack)](https://github.com/rnalimov/deepseek-free-api-hack/stargazers)
 [![GitHub issues](https://img.shields.io/github/issues/rnalimov/deepseek-free-api-hack)](https://github.com/rnalimov/deepseek-free-api-hack/issues)
 [![GitHub last commit](https://img.shields.io/github/last-commit/rnalimov/deepseek-free-api-hack)](https://github.com/rnalimov/deepseek-free-api-hack/commits/main)
 
-**Use DeepSeek for free without API keys.**  
+**Use DeepSeek for free coding without API keys.**  
 A bridge between DeepSeek web interface and local CLI/GUI, **designed specifically for coding, software development, and programming tasks**.  
 Provides a Claude Code‑like experience with tools for file editing, terminal execution, Git, GitHub, code review, and more.
 
@@ -16,7 +16,7 @@ Using automated scripts on DeepSeek's website may violate their Terms of Service
 The author is not responsible for account bans or any consequences.
 
 **This project is in early development stage.** There may be many bugs, issues, or incomplete features.  
-If you encounter problems, feel free to open an issue or submit a Pull Request — they are warmly welcomed and quickly reviewed.
+If you encounter problems, feel free to open an issue or submit a Pull Request - they are warmly welcomed and quickly reviewed.
 
 ## 🚀 Features
 - CLI with autocomplete (Tab)
@@ -41,7 +41,7 @@ git clone https://github.com/rnalimov/deepseek-free-api-hack
 cd deepseek-free-api-hack
 pip install -r requirements.txt
 ```
-🖥️ Usage
+## 🖥️ Usage
 ```bash
 # Console mode (default)
 python server.py
@@ -63,7 +63,7 @@ One‑click launcher
 Inside the app, type /path to add the current folder to your system PATH and create deephack.bat.
 After that you can run deephack from any terminal.
 
-📋 Commands
+## 📋 Commands
 Command	Description
 /send <text>	Send message to DeepSeek
 /model <type>	instant / expert / vision
