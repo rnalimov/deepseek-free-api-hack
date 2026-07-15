@@ -42,6 +42,10 @@ try:
 except ImportError:
     PROMPT_AVAILABLE = False
 
+from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
+import threading
+
 system_lang = locale.getdefaultlocale()[0]
 if system_lang and system_lang.startswith(('ru', 'de')):
     DEFAULT_LANG = system_lang[:2]
@@ -1614,16 +1618,222 @@ class DeepSeekAssistant:
                     self.gui.stop_animation()
 
     def start_flask_server(self):
-        from flask import Flask, request, jsonify
-        from flask_cors import CORS
-
-        app = Flask(__name__)
+        app = Flask(__name__, static_folder='static', template_folder='templates')
         CORS(app)
 
         if CONFIG['mode'] != 'debug':
             log = logging.getLogger('werkzeug')
             log.setLevel(logging.ERROR)
             app.logger.disabled = True
+
+        @app.route('/')
+        def index():
+            return '''
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>DeepSeek Assistant</title>
+                <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+                <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+                <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+                <style>
+                    * { margin: 0; padding: 0; box-sizing: border-box; }
+                    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #0b0f14; color: #e4e9f0; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+                    #root { width: 100%; max-width: 900px; height: 100vh; display: flex; flex-direction: column; background: #141a20; border-radius: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.8); overflow: hidden; }
+                    .chat-container { display: flex; flex-direction: column; height: 100%; }
+                    .chat-header { padding: 20px 24px; background: #1c242c; border-bottom: 1px solid #2a3340; display: flex; justify-content: space-between; align-items: center; }
+                    .chat-header h1 { font-size: 20px; font-weight: 600; background: linear-gradient(135deg, #6c8cff, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+                    .chat-header .status { font-size: 13px; color: #8895a7; display: flex; align-items: center; gap: 8px; }
+                    .chat-header .status .dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block; animation: pulse 1.5s infinite; }
+                    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
+                    .chat-messages { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; scroll-behavior: smooth; }
+                    .chat-messages::-webkit-scrollbar { width: 4px; }
+                    .chat-messages::-webkit-scrollbar-thumb { background: #2a3340; border-radius: 4px; }
+                    .message { display: flex; flex-direction: column; animation: slideUp 0.3s ease-out; }
+                    .message.user { align-items: flex-end; }
+                    .message.assistant { align-items: flex-start; }
+                    .message .bubble { max-width: 80%; padding: 12px 18px; border-radius: 18px; font-size: 15px; line-height: 1.6; word-wrap: break-word; position: relative; }
+                    .message.user .bubble { background: linear-gradient(135deg, #4f6af5, #7c5cfc); color: #fff; border-bottom-right-radius: 4px; }
+                    .message.assistant .bubble { background: #1f2a36; color: #dce3ed; border-bottom-left-radius: 4px; border: 1px solid #2d3a4a; }
+                    .message .timestamp { font-size: 11px; color: #6b7a8d; margin-top: 4px; padding: 0 6px; }
+                    .typing-indicator { display: flex; align-items: center; gap: 8px; padding: 12px 18px; background: #1f2a36; border-radius: 18px; border: 1px solid #2d3a4a; width: fit-content; }
+                    .typing-indicator .dot { width: 8px; height: 8px; border-radius: 50%; background: #6b7a8d; animation: typing 1.2s infinite; }
+                    .typing-indicator .dot:nth-child(2) { animation-delay: 0.2s; }
+                    .typing-indicator .dot:nth-child(3) { animation-delay: 0.4s; }
+                    @keyframes typing { 0%, 60%, 100% { transform: translateY(0); background: #6b7a8d; } 30% { transform: translateY(-8px); background: #a78bfa; } }
+                    .chat-input { padding: 16px 24px; background: #141a20; border-top: 1px solid #1f2a36; display: flex; gap: 12px; align-items: flex-end; }
+                    .chat-input textarea { flex: 1; background: #1c242c; border: 1px solid #2a3340; border-radius: 14px; padding: 12px 16px; color: #e4e9f0; font-size: 15px; resize: none; outline: none; transition: border-color 0.2s; font-family: inherit; min-height: 50px; max-height: 150px; }
+                    .chat-input textarea:focus { border-color: #6c8cff; }
+                    .chat-input button { background: linear-gradient(135deg, #4f6af5, #7c5cfc); border: none; border-radius: 14px; padding: 12px 24px; color: #fff; font-weight: 600; font-size: 15px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; height: 50px; white-space: nowrap; }
+                    .chat-input button:hover { transform: scale(1.02); box-shadow: 0 4px 20px rgba(79, 106, 245, 0.3); }
+                    .chat-input button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+                    .settings-bar { padding: 8px 24px; background: #0f161e; border-bottom: 1px solid #1f2a36; display: flex; gap: 16px; flex-wrap: wrap; align-items: center; font-size: 13px; }
+                    .settings-bar label { color: #8895a7; display: flex; align-items: center; gap: 6px; }
+                    .settings-bar select, .settings-bar input { background: #1c242c; border: 1px solid #2a3340; color: #e4e9f0; padding: 4px 10px; border-radius: 8px; font-size: 13px; outline: none; }
+                    .settings-bar select:focus, .settings-bar input:focus { border-color: #6c8cff; }
+                    .settings-bar .toggle { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+                    .settings-bar .toggle input { display: none; }
+                    .settings-bar .toggle .slider { width: 34px; height: 20px; background: #2a3340; border-radius: 12px; position: relative; transition: 0.2s; }
+                    .settings-bar .toggle .slider::after { content: ''; width: 16px; height: 16px; background: #8895a7; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: 0.2s; }
+                    .settings-bar .toggle input:checked + .slider { background: #4f6af5; }
+                    .settings-bar .toggle input:checked + .slider::after { transform: translateX(14px); background: #fff; }
+                    @media (max-width: 600px) {
+                        #root { border-radius: 0; height: 100vh; }
+                        .chat-header h1 { font-size: 16px; }
+                        .chat-messages { padding: 12px; }
+                        .message .bubble { max-width: 90%; font-size: 14px; }
+                        .chat-input { padding: 12px; flex-wrap: wrap; }
+                        .chat-input button { width: 100%; justify-content: center; }
+                        .settings-bar { flex-direction: column; align-items: stretch; gap: 8px; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div id="root"></div>
+                <script type="text/babel">
+                    const { useState, useRef, useEffect } = React;
+
+                    function App() {
+                        const [messages, setMessages] = useState([]);
+                        const [input, setInput] = useState('');
+                        const [isLoading, setIsLoading] = useState(false);
+                        const [model, setModel] = useState('instant');
+                        const [effort, setEffort] = useState('medium');
+                        const [deepthink, setDeepthink] = useState(false);
+                        const messagesEndRef = useRef(null);
+
+                        const scrollToBottom = () => {
+                            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+                        };
+
+                        useEffect(scrollToBottom, [messages]);
+
+                        const sendMessage = async () => {
+                            if (!input.trim() || isLoading) return;
+                            const userMsg = { role: 'user', content: input.trim(), timestamp: new Date().toISOString() };
+                            setMessages(prev => [...prev, userMsg]);
+                            setInput('');
+                            setIsLoading(true);
+                            try {
+                                const response = await fetch('/api/chat', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ message: input.trim(), model, effort, deepthink })
+                                });
+                                const data = await response.json();
+                                if (data.error) {
+                                    setMessages(prev => [...prev, { role: 'assistant', content: '⚠️ ' + data.error, timestamp: new Date().toISOString() }]);
+                                } else {
+                                    const clean = data.response || 'No response';
+                                    const assistantMsg = { role: 'assistant', content: clean, timestamp: new Date().toISOString() };
+                                    setMessages(prev => [...prev, assistantMsg]);
+                                }
+                            } catch (error) {
+                                setMessages(prev => [...prev, { role: 'assistant', content: '⚠️ Connection error', timestamp: new Date().toISOString() }]);
+                            }
+                            setIsLoading(false);
+                        };
+
+                        const handleKey = (e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                sendMessage();
+                            }
+                        };
+
+                        return (
+                            <div className="chat-container">
+                                <div className="chat-header">
+                                    <h1>✦ DeepSeek</h1>
+                                    <div className="status">
+                                        <span className="dot"></span> Ready
+                                    </div>
+                                </div>
+                                <div className="settings-bar">
+                                    <label>Model
+                                        <select value={model} onChange={e => setModel(e.target.value)}>
+                                            <option value="instant">Instant</option>
+                                            <option value="expert">Expert</option>
+                                            <option value="vision">Vision</option>
+                                        </select>
+                                    </label>
+                                    <label>Effort
+                                        <select value={effort} onChange={e => setEffort(e.target.value)}>
+                                            <option value="low">Low</option>
+                                            <option value="medium">Medium</option>
+                                            <option value="high">High</option>
+                                            <option value="ultracode">Ultracode</option>
+                                            <option value="auto">Auto</option>
+                                        </select>
+                                    </label>
+                                    <label className="toggle">
+                                        DeepThink
+                                        <input type="checkbox" checked={deepthink} onChange={e => setDeepthink(e.target.checked)} />
+                                        <span className="slider"></span>
+                                    </label>
+                                </div>
+                                <div className="chat-messages">
+                                    {messages.map((msg, idx) => (
+                                        <div key={idx} className={`message ${msg.role}`}>
+                                            <div className="bubble">{msg.content}</div>
+                                            <div className="timestamp">{new Date(msg.timestamp).toLocaleTimeString()}</div>
+                                        </div>
+                                    ))}
+                                    {isLoading && (
+                                        <div className="message assistant">
+                                            <div className="typing-indicator">
+                                                <span className="dot"></span>
+                                                <span className="dot"></span>
+                                                <span className="dot"></span>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div ref={messagesEndRef} />
+                                </div>
+                                <div className="chat-input">
+                                    <textarea
+                                        value={input}
+                                        onChange={e => setInput(e.target.value)}
+                                        onKeyDown={handleKey}
+                                        placeholder="Message DeepSeek..."
+                                        rows="1"
+                                        disabled={isLoading}
+                                    />
+                                    <button onClick={sendMessage} disabled={isLoading || !input.trim()}>
+                                        {isLoading ? '...' : 'Send'}
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    }
+
+                    ReactDOM.render(<App />, document.getElementById('root'));
+                </script>
+            </body>
+            </html>
+            '''
+
+        @app.route('/api/chat', methods=['POST'])
+        def chat():
+            data = request.json
+            message = data.get('message', '').strip()
+            if not message:
+                return jsonify({'error': 'Empty message'}), 400
+            # Обновляем конфиг из запроса
+            if 'model' in data:
+                CONFIG['model'] = data['model']
+            if 'effort' in data:
+                CONFIG['effort'] = data['effort']
+            if 'deepthink' in data:
+                CONFIG['deepthink'] = bool(data['deepthink'])
+            # Обновляем системный промпт
+            self.system_prompt = get_system_prompt()
+            response, elapsed = self.send_to_deepseek(message, force_system=False)
+            if response is None:
+                return jsonify({'error': 'Timeout or error'}), 500
+            return jsonify({'response': response, 'elapsed': elapsed})
 
         @app.route('/api/get_pending', methods=['GET'])
         def get_pending():
@@ -1756,7 +1966,6 @@ class DeepSeekAssistant:
         pattern = re.compile(r'<<<\s*.*?\s*>>>', re.DOTALL)
         return pattern.sub('', text).strip()
 
-    # ---------- Основные методы ----------
     def execute_bash(self, cmd):
         try:
             result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
@@ -1866,10 +2075,6 @@ class DeepSeekAssistant:
         return f"Задача сохранена на {count} сообщений: {task_text}"
 
     def edit_file(self, cmd):
-        """
-        EDIT: <path>|<old_content>|<new_content>
-        Заменяет первое вхождение old_content на new_content в файле.
-        """
         parts = cmd.split('|')
         if len(parts) < 3:
             return "Error: Invalid EDIT format. Use EDIT: path|old_content|new_content"
