@@ -1,6 +1,5 @@
 flask>=2.3.0
 flask-cors>=4.0.0
-requests>=2.31.0
 customtkinter>=5.2.0
 prompt-toolkit>=3.0.0
 colorama>=0.4.6
